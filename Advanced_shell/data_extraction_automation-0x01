@@ -1,42 +1,13 @@
 #!/bin/bash
+# Extract specific data from data.json
 
-# Input JSON file containing Pokémon data
-INPUT_FILE="data.json"
+NAME=$(jq -r '.name' data.json | sed 's/.*/\u&/')
+HEIGHT=$(jq '.height' data.json)
+WEIGHT=$(jq '.weight' data.json)
+TYPE=$(jq -r '.types[0].type.name' data.json | sed 's/.*/\u&/')
 
-# Temp file to store formatted output
-OUTPUT_FILE="pokemon_data.txt"
+# Convert height/weight to readable form
+HEIGHT_M=$(awk -v h="$HEIGHT" 'BEGIN {printf "%.1f", h/10}')
+WEIGHT_KG=$(awk -v w="$WEIGHT" 'BEGIN {printf "%.1f", w/10}')
 
-# Use jq to extract the URL for each Pokémon
-POKEMON_URLS=$(jq -r '.results[] | .url' "$INPUT_FILE")
-
-# Loop through each URL and fetch data
-for URL in $POKEMON_URLS; do
-  # Make an API request to the Pokémon URL
-  RESPONSE=$(curl -s -w "%{http_code}" -o temp.json "$URL")
-
-  # Check the response status code
-  if [ "$RESPONSE" -eq 200 ]; then
-    # Extract fields using jq
-    NAME=$(jq -r '.name' temp.json)
-    HEIGHT=$(jq -r '.height' temp.json)
-    WEIGHT=$(jq -r '.weight' temp.json)
-    TYPE=$(jq -r '.types[0].type.name' temp.json)
-
-    # Convert height and weight
-    HEIGHT=$(echo "$HEIGHT" | awk '{print $1 / 10}')
-    WEIGHT=$(echo "$WEIGHT" | awk '{print $1 / 10}')
-    # Format the output and append to the output file
-    echo "$NAME is of type $TYPE, weighs $WEIGHT kg, and is $HEIGHT m tall." >> "$OUTPUT_FILE"
-
-  else
-    echo "Error: Failed to fetch data from $URL" >> errors.txt
-  fi
-
-  # Clean up the temporary file
-  rm -f temp.json
-done
-
-echo "Data extraction completed. Check $OUTPUT_FILE for the results."
-cat $OUTPUT_FILE
-
-rm -f "$OUTPUT_FILE"
+echo "$NAME is of type $TYPE, weighs ${WEIGHT_KG}kg, and is ${HEIGHT_M}m tall."
