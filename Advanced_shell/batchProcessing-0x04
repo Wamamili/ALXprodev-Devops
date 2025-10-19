@@ -1,22 +1,38 @@
 #!/bin/bash
-# Fetch multiple Pokémon in parallel
+# Script: batchProcessing-0x04
+# Purpose: Fetch multiple Pokémon data in parallel and manage processes
 
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
-DIR="pokemon_data_parallel"
-mkdir -p "$DIR"
+OUTPUT_DIR="pokemon_data"
 
-fetch_pokemon() {
-    POKEMON=$1
-    if curl -s -f "https://pokeapi.co/api/v2/pokemon/$POKEMON" -o "$DIR/$POKEMON.json"; then
-        echo "Saved $POKEMON ✅"
+# Create output directory if not exists
+mkdir -p "$OUTPUT_DIR"
+
+echo "Starting parallel data fetching..."
+
+# Fetch data in background
+for pokemon in "${POKEMONS[@]}"; do
+  (
+    echo "Fetching data for $pokemon..."
+    curl -s "https://pokeapi.co/api/v2/pokemon/$pokemon" -o "$OUTPUT_DIR/${pokemon}.json"
+    if [ $? -eq 0 ]; then
+      echo "Saved data to $OUTPUT_DIR/${pokemon}.json ✅"
     else
-        echo "Error fetching $POKEMON ❌" >> errors.txt
+      echo "Error fetching $pokemon" >> errors.txt
     fi
-}
-
-for POKEMON in "${POKEMONS[@]}"; do
-    fetch_pokemon "$POKEMON" &
+  ) &
 done
 
+# Show background jobs
+echo
+echo "Current background jobs:"
+jobs
+
+# Wait for all jobs to finish
 wait
-echo "✅ All Pokémon data fetched in parallel!"
+
+echo
+echo "All Pokémon data fetched successfully!"
+
+# Optionally: clean up or kill jobs if needed
+# kill $(jobs -p)
