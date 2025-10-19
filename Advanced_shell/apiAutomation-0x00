@@ -1,0 +1,23 @@
+#!/bin/bash
+
+API_URL="https://pokeapi.co/api/v2/pokemon/"
+OUTPUT_FILE="data.json"
+ERROR_FILE="errors.txt"
+TEMP_FILE="temp_response.json"
+
+curl -s -o "$TEMP_FILE" -w "%{http_code}" "$API_URL" > status_code
+
+HTTP_STATUS=$(cat status_code)
+
+if [ "$HTTP_STATUS" -eq 200 ]; then
+    mv "$TEMP_FILE" "$OUTPUT_FILE"
+    jq . "$OUTPUT_FILE" > temp_pretty.json && mv temp_pretty.json "$OUTPUT_FILE"
+    echo "API request successful. Data saved to $OUTPUT_FILE."
+else
+    ERROR_MSG="Error: API request failed with status code $HTTP_STATUS ar $(date)"
+    echo "$ERROR_MSG" >> "$ERROR_FILE"
+    echo "$ERROR_MSG"
+    rm "$TEMP_FILE" 2>/dev/null
+fi 
+
+rm -f status_code
